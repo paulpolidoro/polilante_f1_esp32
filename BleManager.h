@@ -15,9 +15,15 @@ public:
     void disconnect();
     bool send(const uint8_t* data, size_t length);
     void onReceive(std::function<void(uint8_t*, size_t)> callback);
+    void onDisconnect(std::function<void()> callback);
+
 
 private:
     static void notifyCallback(BLERemoteCharacteristic* pChar, uint8_t* data, size_t length, bool isNotify);
+
+    static void connectionMonitorTask(void* pvParameters);
+    std::function<void()> disconnectCallback;
+    bool lastConnectionState = false;
 
     static std::function<void(uint8_t*, size_t)> userCallback;
 

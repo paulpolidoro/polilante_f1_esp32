@@ -17,8 +17,8 @@ BleManager ble(BLE_SERVICE_UUID, BLE_CHARACTERISTIC_UUID);
 ButtonManager buttonManager(botoes);
 TachometerManager tachometer(LED_PIN);
 
-EncoderEC11 enc1 = {25, 26, 13, 14};
-EncoderEC11 enc2 = {32, 33, 15, 16};
+EncoderEC11 enc1 = {25, 26, 12, 13};
+EncoderEC11 enc2 = {32, 33, 14, 15};
 
 int valor = 0;
 
@@ -96,6 +96,30 @@ void setup() {
   }
 
   tachometer.stopBlinkLastLed();
+
+  ble.onDisconnect([]() {
+    DEBUG_PRINTLN("🔌 BLE desconectado!");
+    tachometer.startBlinkLastLedBlue();
+
+    xTaskCreatePinnedToCore(
+        [](void*) {
+            while (!ble.connect()) {
+                DEBUG_PRINTLN("Tentando reconectar BLE...");
+                vTaskDelay(pdMS_TO_TICKS(5000));
+            }
+            DEBUG_PRINTLN("✅ Reconectado!");
+            tachometer.stopBlinkLastLed();
+            vTaskDelete(nullptr);
+        },
+        "BLEReconnectTask",
+        2048,
+        nullptr,
+        1,
+        nullptr,
+        1
+    );
+
+  });
 
   // 🔘 Botões
   buttonManager.onClick([](int index) {

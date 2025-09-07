@@ -33,6 +33,17 @@ bool BleManager::connect() {
     pRemoteCharacteristic->registerForNotify(notifyCallback);
     DEBUG_PRINTLN("Conectado e inscrito para notificações BLE.");
     connected = true;
+
+    xTaskCreatePinnedToCore(
+        connectionMonitorTask,
+        "BLEConnectionMonitor",
+        2048,
+        this,
+        1,
+        nullptr,
+        1
+    );
+
     return true;
 }
 
@@ -62,5 +73,29 @@ void BleManager::onReceive(std::function<void(uint8_t*, size_t)> callback) {
 void BleManager::notifyCallback(BLERemoteCharacteristic* pChar, uint8_t* data, size_t length, bool isNotify) {
     if (userCallback) {
         userCallback(data, length);
+    }
+}
+
+void BleManager::onDisconnect(std::function<void()> callback) {
+    disconnectCallback = callback;
+}
+
+void BleManager::connectionMonitorTask(void* pvParameters) {
+    BleManager* self = static_cast<BleManager*>(pvParameters);
+
+    while (true) {
+        bool currentState = self->isConnected();
+
+        if (self->lastConnectionState && !currentState) {
+            // Conexão foi perdida
+            if (self->disconnectCallback) {
+                self->disconnectCallback();
+            }
+
+            vTaskDelete(nullptr);
+        }
+
+        self->lastConnectionState = currentState;
+        vTaskDelay(pdMS_TO_TICKS(1000));  // Verifica a cada 500ms
     }
 }

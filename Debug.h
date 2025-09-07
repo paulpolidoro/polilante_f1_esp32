@@ -1,6 +1,6 @@
 #pragma once
 
-#define DEBUG_MODE true  // Altere para false para desativar os prints
+#define DEBUG_MODE false  // Altere para false para desativar os prints
 
 #if DEBUG_MODE
   #define DEBUG_PRINT(x) Serial.print(x)
